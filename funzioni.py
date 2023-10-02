@@ -5,10 +5,10 @@ import pickle
 import os
 import datetime
 
-# Prende un punto in input e calcola la media pesata dalla distanza dei punti vicini compreso se stesso
+# Prende un punto in input e calcola la media dalla distanza dei punti vicini compreso se stesso
 
 
-def media_pesata_vicinato(yc, xc, image, r):
+def media_vicinato(yc, xc, image, r):
     h = len(image)  # Altezza della matrice
     w = len(image[0])  # Larghezza della matrice
     somma = 0
@@ -18,15 +18,11 @@ def media_pesata_vicinato(yc, xc, image, r):
             xi = xc-i
             yj = yc-j
             if xi >= 0 and yj >= 0 and xi < w and yj < h:
-                d = math.sqrt((xc-xi) ** 2 + (yc-yj) ** 2)
-                if d <= r:
+                d = (xc-xi) ** 2 + (yc-yj) ** 2
+                if d <= r**2:
                     Itemp = image[yj, xi]
-                    if d != 0:
-                        somma += Itemp*(1/d)
-                        N += (1/d)
-                    else:
-                        somma += Itemp
-                        N += 1
+                    somma += Itemp
+                    N += 1
     media = somma/N
     return [image[yc, xc], media, yc, xc]
 
@@ -57,8 +53,9 @@ def filtra_vicinato(dati, image, r, pTot):
     h = len(image)  # Altezza della matrice
     w = len(image[0])  # Larghezza della matrice
     datiTemp = []
+
     for i in dati:
-        datiTemp.append(media_pesata_vicinato(i[1], i[2], image, r))
+        datiTemp.append(media_vicinato(i[1], i[2], image, r))
     datiSMed = sorted(datiTemp, key=lambda x: x[1])
 
     newPmax = []
@@ -73,8 +70,9 @@ def filtra_vicinato(dati, image, r, pTot):
 
     if len(dataToSend) > 1 and r < h/2 and r < w/2:
         if len(dati) != pTot:
-            print('Ricerca massimo: ' + str(100 - int((len(dati)/pTot)*100)) + '%')
-        return filtra_vicinato(dataToSend, image, (r+1), pTot)
+            print('Ricerca massimo: ' +
+                  str(100 - round((len(dati)/pTot)*100)) + '%')
+        return filtra_vicinato(dataToSend, image, (r + 1), pTot)
     else:
         print('Ricerca massimo: 100%')
         return dataToSend

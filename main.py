@@ -3,22 +3,29 @@ import numpy as np
 import pickle
 import os
 import datetime
+import time
+import multiprocessing
 
 from funzioni import *
 
-# Inizializzo le variilii principali
+# Inizializzo le varili principali
 dateNow = (datetime.datetime.now()).strftime("%d-%m-%Y_%H-%M-%S")
+tempo_inizio = time.time()
 
 # Imax = 1023
 Imin = 0  # ntensità miinima
 errore = 1  # Errore sull'intensiità, i punti di massimo vengo cercati considerando l'errore
 showM = False
+saveData = True
 
 # Cerco la lista di dutte le immagini da analizzare
 listImage = os.listdir(os.path.dirname(os.path.abspath(__file__)) + '/assets')
 
 allProfileX = []
+allProfileY = []
 allCenter = []
+
+
 for name in listImage:
     image = cv2.imread('assets/'+name, 0)
 
@@ -29,7 +36,10 @@ for name in listImage:
         print('In ' + name + ' ho trovato ' +
               str(len(puntiMax)) + ' punti di massimo')
         print('Ricerca massimo: 0%')
-        pMaxFiltrati = filtra_vicinato(puntiMax, image, 1, len(puntiMax))
+        r = round(math.sqrt(len(puntiMax)/6.2931)/2)
+        if r < 1:
+            r = 1
+        pMaxFiltrati = filtra_vicinato(puntiMax, image, r, len(puntiMax))
         if len(pMaxFiltrati) == 1:
             maxP = pMaxFiltrati[0]
         else:
@@ -37,13 +47,14 @@ for name in listImage:
     else:
         if len(puntiMax) == 1:
             print('In ' + name + ' ho trovato ' +
-                  str(len(puntiMax)) + ' come massimo')
+                  str(len(puntiMax)) + ' punto di massimo')
             print('Ricerca massimo: 0%')
             maxP = puntiMax[0]
+            print('Ricerca massimo: 100%')
         else:
             print('Non ho trovato massimi')
 
-    print('Massimo trovato=  I:' +
+    print('Massimo trovato ->  I:' +
           str(maxP[0]) + ', Y:' + str(maxP[1]) + ', X:' + str(maxP[2]))
     print()
     allCenter.append([maxP[1], maxP[2]])
@@ -56,33 +67,75 @@ for name in listImage:
     profX = profile_dataX(image, maxP[1])
     profY = profile_dataY(image, maxP[2])
     allProfileX.append(profX)
+    allProfileY.append(profY)
 
+print('-------------Fine--------------')
+print('---------Salvo i dati----------')
 
-print('----------------------------')
-
-# Salvol su un file le coordinate di tutti i centri
-with open('result/'+dateNow+'_center.dat', 'w') as file:
-    file.write('Centri delle immagini' + '\n')
-    file.write('Y\tX\n')
-    for elemento in allCenter:
-        file.write(str(elemento[0]) + '\t' + str(elemento[1]) + '\n')
+# Salvo su un file le coordinate di tutti i centri
+if saveData == True:
+    with open('result/'+dateNow+'_center.dat', 'w') as file:
+        file.write('Centri delle immagini' + '\n')
+        file.write('Y\tX\n')
+        for elemento in allCenter:
+            file.write(str(elemento[0]) + '\t' + str(elemento[1]) + '\n')
 
 # Disegno l'imaggine costruirta da tutti i profili
-h = len(listImage)
-w = len(allProfileX[0])
-img = np.zeros((h, w, 3), np.uint8)
-print('Immagine: ' + str(h) + 'x' + str(w))
-for y in range(h):
-    for x in range(w):
-        I = allProfileX[y][x][0]
-        # print('I:' + str(I)+'; Y:' + str(y)+'; X:' + str(x))
-        img[y, x] = (I, I, I)
-# Salvo l'immagine formata da tutti i profili
+hx = len(listImage)
+wx = len(allProfileX[0])
+hy = len(allProfileY[0])
+wy = len(listImage)
+imgX = np.zeros((hx, wx, 3), np.uint8)
+imgY = np.zeros((hy, wy, 3), np.uint8)
+print('ImmagineX: ' + str(hx) + 'x' + str(wx))
+print('ImmagineY: ' + str(hy) + 'x' + str(wy))
 
-cv2.imwrite('result/'+dateNow+'_image.jpg', img)
-# cv2.imshow('Binary', img)
-# cv2.waitKey(0)
-# cv2.destroyAllWindows()
+for y in range(hx):  # Lungo X
+    for x in range(wx):
+        I = allProfileX[y][x][0]
+        imgX[y, x] = (I, I, I)
+
+for y in range(hy):  # Lungo y
+    for x in range(wy):
+        I = allProfileY[x][y][0]
+        imgY[y, x] = (I, I, I)
+        cv2.flip(imgY, 0)
+
+
+if saveData == True:
+    with open('result/'+dateNow+'_imgX.dat', 'w') as file:
+        file.write('Profili passanti dal centro lungo X' + '\n')
+        for i in range(hx):
+            file.write('I'+str(i+1)+'\tY'+str(i+1)+'\tX'+str(i+1) + '\t')
+        file.write('\n')
+        
+        for j in range(wx):
+            for i in range(hx):
+                file.write(str(imgX[i, j][0]) + '\t' +
+                           str(i) + '\t' + str(j) + '\t')
+            file.write('\n')
+            
+    with open('result/'+dateNow+'_imgY.dat', 'w') as file:
+        file.write('Profili passanti dal centro lungo Y' + '\n')
+        for i in range(wy):
+            file.write('I'+str(i+1)+'\tY'+str(i+1)+'\tX'+str(i+1) + '\t')
+        file.write('\n')
+
+        for i in range(hy):
+            for j in range(wy):
+                file.write(str(imgY[i, j][0]) + '\t' +
+                           str(i) + '\t' + str(j) + '\t')
+            file.write('\n')
+
+
+if saveData == True:  # Salvo l'immagine formata da tutti i profili
+    cv2.imwrite('result/'+dateNow+'_imageX.jpg', imgX)
+    cv2.imwrite('result/'+dateNow+'_imageY.jpg', imgY)
+
+tempo_fine = time.time()
+tempo_trascorso = tempo_fine - tempo_inizio
+print('Tempo impiegato:' + str(round(tempo_trascorso, 2)) + 's')
+
 
 # prit_profile('porfX_'+name, profX,
 #              'Profilo che passa dal centro lungo l asse X, nome immagine: ' + name)
