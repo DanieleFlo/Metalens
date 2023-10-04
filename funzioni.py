@@ -4,10 +4,11 @@ import numpy as np
 import pickle
 import os
 import datetime
+import concurrent.futures
+import time
 
-# Prende un punto in input e calcola la media dalla distanza dei punti vicini compreso se stesso
 
-
+# Prende un punto in input e calcola la media dalla distanza dei punti vicini compreso se stesso.
 def media_vicinato(yc, xc, image, r):
     h = len(image)  # Altezza della matrice
     w = len(image[0])  # Larghezza della matrice
@@ -19,7 +20,8 @@ def media_vicinato(yc, xc, image, r):
             yj = yc-j
             if xi >= 0 and yj >= 0 and xi < w and yj < h:
                 d = (xc-xi) ** 2 + (yc-yj) ** 2
-                if d <= r**2:
+                Rq = r**2
+                if d <= Rq:
                     Itemp = image[yj, xi]
                     somma += Itemp
                     N += 1
@@ -50,32 +52,39 @@ def pMax(dati, Imin, errore):  # Cerca i punti di massimo assoluti in una funzio
 
 # Prende in input un array di punti di massimo, allarga il vicinato finchè non trova quello ha in media il vicinato più iintenso
 def filtra_vicinato(dati, image, r, pTot):
+    pi1 = time.time()
     h = len(image)  # Altezza della matrice
     w = len(image[0])  # Larghezza della matrice
     datiTemp = []
+    with concurrent.futures.ProcessPoolExecutor() as executor:
+        results = [executor.submit(
+            media_vicinato, i[1], i[2], image, r) for i in dati]
 
-    for i in dati:
-        datiTemp.append(media_vicinato(i[1], i[2], image, r))
+        for f in concurrent.futures.as_completed(results):
+            datiTemp.append(f.result())
+
+    # for i in dati:
+    #     datiTemp.append(media_vicinato(i[1], i[2], image, r))
+
     datiSMed = sorted(datiTemp, key=lambda x: x[1])
 
     newPmax = []
     for k in range(len(datiSMed) - 1, 0, -1):
         firstM = (len(datiSMed) - 1)
         if datiSMed[k][1] >= datiSMed[firstM][1]:
-            newPmax.append(datiSMed[k])
+            newPmax.append([datiSMed[k][0], datiSMed[k][2], datiSMed[k][3]])
 
-    dataToSend = []
-    for el in newPmax:
-        dataToSend.append([el[0], el[2], el[3]])
-
-    if len(dataToSend) > 1 and r < h/2 and r < w/2:
+    if len(newPmax) > 1 and r < h/2 and r < w/2:
         if len(dati) != pTot:
+            pf1 = time.time()
             print('Ricerca massimo: ' +
-                  str(100 - round((len(dati)/pTot)*100)) + '%')
-        return filtra_vicinato(dataToSend, image, (r + 1), pTot)
+                  str(100 - round((len(dati)/pTot)*100)) + '%, t:' + str(round(pf1-pi1, 2)) + 's')
+        
+        return filtra_vicinato(newPmax, image, (r + 1), pTot)
     else:
-        print('Ricerca massimo: 100%')
-        return dataToSend
+        pf1 = time.time()
+        print('Ricerca massimo: 100%, t:' + str(round(pf1-pi1, 2)) + 's')
+        return newPmax
 
 
 # Mostra un immagine in scala di grigio con un punto di colore diverso
@@ -107,12 +116,3 @@ def profile_dataY(image, x):  # Restituisce il profilo lungo Y
     for y in range(h):
         profY.append([image[y, x], y, x])
     return profY
-
-
-def prit_profile(nameFile, profile, info):  # Stampa su file un prfilo in I,X,Y
-    with open('result/'+nameFile+'.dat', 'w') as file:
-        file.write(info + '\n')
-        file.write('I\tY\tX\n')
-        for elemento in profile:
-            file.write(str(elemento[0]) + '\t' +
-                       str(elemento[1]) + '\t' + str(elemento[2]) + '\n')
