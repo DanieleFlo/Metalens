@@ -17,7 +17,7 @@ eggs/
 lib/
 lib64/
 parts/
-rsult/
+result/
 assets/
 sdist/
 var/
