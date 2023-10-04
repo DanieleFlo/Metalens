@@ -36,11 +36,12 @@ if __name__ == "__main__":
         if len(puntiMax) > 1:
             print('In ' + name + ' ho trovato ' +
                   str(len(puntiMax)) + ' punti di massimo')
-            print('Ricerca massimo: 0%')
+            print(name + '-> Ricerca massimo: 0%')
             r = round(math.sqrt(len(puntiMax)/6.2931)/2)
             if r < 1:
                 r = 1
-            pMaxFiltrati = filtra_vicinato(puntiMax, image, r, len(puntiMax))
+            pMaxFiltrati = filtra_vicinato(
+                puntiMax, image, r, len(puntiMax), name)
             if len(pMaxFiltrati) == 1:
                 maxP = pMaxFiltrati[0]
             else:
@@ -49,13 +50,13 @@ if __name__ == "__main__":
             if len(puntiMax) == 1:
                 print('In ' + name + ' ho trovato ' +
                       str(len(puntiMax)) + ' punto di massimo')
-                print('Ricerca massimo: 0%')
+                print(name + '-> Ricerca massimo: 0%')
                 maxP = puntiMax[0]
-                print('Ricerca massimo: 100%')
+                print(name + '-> Ricerca massimo: 100%')
             else:
                 print('Non ho trovato massimi')
 
-        print('Massimo trovato ->  I:' +
+        print(name + '-> Massimo trovato ->  I:' +
               str(maxP[0]) + ', Y:' + str(maxP[1]) + ', X:' + str(maxP[2]))
         allCenter.append([maxP[1], maxP[2]])
 
@@ -68,7 +69,7 @@ if __name__ == "__main__":
 
     with concurrent.futures.ThreadPoolExecutor() as executor:
         results = executor.map(mainF, listImage)
-        
+
         for result in results:
             allProfileX.append(result[0])
             allProfileY.append(result[1])
@@ -139,7 +140,7 @@ if __name__ == "__main__":
 
     tempo_fine = time.time()
     tempo_trascorso = tempo_fine - tempo_inizio
-    print('Tempo impiegato:' + str(round(tempo_trascorso, 2)) + 's')
+    print('Tempo impiegato:' + str(round((tempo_trascorso/60), 2)) + 'm')
 
 
 # cv2.imshow('Image', image)
