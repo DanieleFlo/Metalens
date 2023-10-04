@@ -56,7 +56,7 @@ def filtra_vicinato(dati, image, r, pTot):
     h = len(image)  # Altezza della matrice
     w = len(image[0])  # Larghezza della matrice
     datiTemp = []
-    with concurrent.futures.ProcessPoolExecutor() as executor:
+    with concurrent.futures.ThreadPoolExecutor() as executor:
         results = [executor.submit(
             media_vicinato, i[1], i[2], image, r) for i in dati]
 

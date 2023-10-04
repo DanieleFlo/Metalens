@@ -26,7 +26,7 @@ allProfileY = []
 allCenter = []
 
 if __name__ == "__main__":
-    for name in listImage:
+    def mainF(name):
         tempC_start = time.time()
         image = cv2.imread('assets/'+name, 0)
 
@@ -35,7 +35,7 @@ if __name__ == "__main__":
         puntiMax = pMax(image, Imin, errore)
         if len(puntiMax) > 1:
             print('In ' + name + ' ho trovato ' +
-                str(len(puntiMax)) + ' punti di massimo')
+                  str(len(puntiMax)) + ' punti di massimo')
             print('Ricerca massimo: 0%')
             r = round(math.sqrt(len(puntiMax)/6.2931)/2)
             if r < 1:
@@ -48,7 +48,7 @@ if __name__ == "__main__":
         else:
             if len(puntiMax) == 1:
                 print('In ' + name + ' ho trovato ' +
-                    str(len(puntiMax)) + ' punto di massimo')
+                      str(len(puntiMax)) + ' punto di massimo')
                 print('Ricerca massimo: 0%')
                 maxP = puntiMax[0]
                 print('Ricerca massimo: 100%')
@@ -56,7 +56,7 @@ if __name__ == "__main__":
                 print('Non ho trovato massimi')
 
         print('Massimo trovato ->  I:' +
-            str(maxP[0]) + ', Y:' + str(maxP[1]) + ', X:' + str(maxP[2]))
+              str(maxP[0]) + ', Y:' + str(maxP[1]) + ', X:' + str(maxP[2]))
         allCenter.append([maxP[1], maxP[2]])
 
         if showM == True:
@@ -64,13 +64,17 @@ if __name__ == "__main__":
             point = [maxP[1], maxP[2]]
             show_img_with_point(image, point, red)
 
-        profX = profile_dataX(image, maxP[1])
-        profY = profile_dataY(image, maxP[2])
-        allProfileX.append(profX)
-        allProfileY.append(profY)
-        tempC_end = time.time()
-        print('Tempo interazione: ' + str(tempC_end-tempC_start) + 's')
-        print()
+        return [profile_dataX(image, maxP[1]), profile_dataY(image, maxP[2]), tempC_start]
+
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        results = executor.map(mainF, listImage)
+        
+        for result in results:
+            allProfileX.append(result[0])
+            allProfileY.append(result[1])
+            tempC_end = time.time()
+            print('Tempo analisi: ' + str(tempC_end-result[2]) + 's')
+            print()
 
     print('-------------Fine--------------')
     print('---------Salvo i dati----------')
@@ -96,14 +100,13 @@ if __name__ == "__main__":
     for y in range(hx):  # Lungo X
         for x in range(wx):
             I = allProfileX[y][x][0]
-            imgX[y, x] = (0, 0, I)#(I, I, I)
+            imgX[y, x] = (0, 0, I)  # (I, I, I)
 
     for y in range(hy):  # Lungo y
         for x in range(wy):
             I = allProfileY[x][y][0]
-            imgY[y, x] = (0, 0, I)#(I, I, I)
+            imgY[y, x] = (0, 0, I)  # (I, I, I)
             cv2.flip(imgY, 0)
-
 
     if saveData == True:
         with open('result/'+dateNow+'_imgX.dat', 'w') as file:
@@ -115,7 +118,7 @@ if __name__ == "__main__":
             for j in range(wx):
                 for i in range(hx):
                     file.write(str(j) + '\t' +
-                            str(imgX[i, j][0]) + '\t')
+                               str(imgX[i, j][0]) + '\t')
                 file.write('\n')
 
         with open('result/'+dateNow+'_imgY.dat', 'w') as file:
@@ -127,9 +130,8 @@ if __name__ == "__main__":
             for i in range(hy):
                 for j in range(wy):
                     file.write(str(i) + '\t' +
-                            str(imgY[i, j][0]) + '\t')
+                               str(imgY[i, j][0]) + '\t')
                 file.write('\n')
-
 
     if saveData == True:  # Salvo l'immagine formata da tutti i profili
         cv2.imwrite('result/'+dateNow+'_imageX.jpg', imgX)
