@@ -26,7 +26,10 @@ allProfileY = []
 allCenter = []
 
 if __name__ == "__main__":
-    def mainF(name):
+    def mainF(name, index):
+        # Carico le immagini
+        idTh = str(index) + 'th '
+        print(name + ' -> ' + idTh)
         tempC_start = time.time()
         image = cv2.imread('assets/'+name, 0)
 
@@ -34,14 +37,14 @@ if __name__ == "__main__":
         maxP = []
         puntiMax = pMax(image, Imin, errore)
         if len(puntiMax) > 1:
-            print('In ' + name + ' ho trovato ' +
+            print('In ' + idTh + ' ho trovato ' +
                   str(len(puntiMax)) + ' punti di massimo')
-            print(name + '-> Ricerca massimo: 0%')
+            print(idTh + '-> Ricerca massimo: 0%')
             r = round(math.sqrt(len(puntiMax)/6.2931)/2)
             if r < 1:
                 r = 1
             pMaxFiltrati = filtra_vicinato(
-                puntiMax, image, r, len(puntiMax), name)
+                puntiMax, image, r, len(puntiMax), idTh)
             if len(pMaxFiltrati) == 1:
                 maxP = pMaxFiltrati[0]
             else:
@@ -50,13 +53,13 @@ if __name__ == "__main__":
             if len(puntiMax) == 1:
                 print('In ' + name + ' ho trovato ' +
                       str(len(puntiMax)) + ' punto di massimo')
-                print(name + '-> Ricerca massimo: 0%')
+                print(idTh + '-> Ricerca massimo: 0%')
                 maxP = puntiMax[0]
-                print(name + '-> Ricerca massimo: 100%')
+                print(idTh + '-> Ricerca massimo: 100%')
             else:
                 print('Non ho trovato massimi')
 
-        print(name + '-> Massimo trovato ->  I:' +
+        print(idTh + '-> Massimo trovato ->  I:' +
               str(maxP[0]) + ', Y:' + str(maxP[1]) + ', X:' + str(maxP[2]))
         allCenter.append([maxP[1], maxP[2]])
 
@@ -65,16 +68,19 @@ if __name__ == "__main__":
             point = [maxP[1], maxP[2]]
             show_img_with_point(image, point, red)
 
-        return [profile_dataX(image, maxP[1]), profile_dataY(image, maxP[2]), tempC_start]
+        return [profile_dataX(image, maxP[1]), profile_dataY(image, maxP[2]), tempC_start, idTh]
 
     with concurrent.futures.ThreadPoolExecutor() as executor:
-        results = executor.map(mainF, listImage)
+
+        results = executor.map(lambda args: mainF(
+            *args), [(item, index) for index, item in enumerate(listImage)])
 
         for result in results:
             allProfileX.append(result[0])
             allProfileY.append(result[1])
             tempC_end = time.time()
-            print('Tempo analisi: ' + str(tempC_end-result[2]) + 's')
+            print(result[3]+ '-> Tempo analisi: ' +
+                  str(round((tempC_end-result[2])/60, 2)) + 'm')
             print()
 
     print('-------------Fine--------------')

@@ -51,7 +51,7 @@ def pMax(dati, Imin, errore):  # Cerca i punti di massimo assoluti in una funzio
 
 
 # Prende in input un array di punti di massimo, allarga il vicinato finchè non trova quello ha in media il vicinato più iintenso
-def filtra_vicinato(dati, image, r, pTot, name):
+def filtra_vicinato(dati, image, r, pTot, idTh):
     pi1 = time.time()
     h = len(image)  # Altezza della matrice
     w = len(image[0])  # Larghezza della matrice
@@ -77,13 +77,13 @@ def filtra_vicinato(dati, image, r, pTot, name):
     if len(newPmax) > 1 and r < h/2 and r < w/2:
         if len(dati) != pTot:
             pf1 = time.time()
-            print(name + '-> Ricerca massimo: ' +
+            print(idTh + '-> Ricerca massimo: ' +
                   str(100 - round((len(dati)/pTot)*100)) + '%, t:' + str(round((pf1-pi1)/60, 2)) + 'm')
 
-        return filtra_vicinato(newPmax, image, (r + 1), pTot, name)
+        return filtra_vicinato(newPmax, image, (r + 1), pTot, idTh)
     else:
         pf1 = time.time()
-        print(name + '-> Ricerca massimo: 100%, t:' +
+        print(idTh + '-> Ricerca massimo: 100%, t:' +
               str(round((pf1-pi1)/60, 2)) + 'm')
         return newPmax
 
