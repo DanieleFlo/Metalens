@@ -45,9 +45,9 @@ def ideal(diametro, wavelength, fuoco, pixel_size, noise_lim):
             if r[i, j] == 0:  # if at centre set I to 1
                 I[i, j] = 1.
             else:  # otherwise calculate I
-                # Maca il 2*pi perchè utilizzo il diametro e non il raggio
+                # Maca il 2*pi perchè utilizzo il diametro e non il raggio, dovrebbe essere l'acseno ma per piccoli theta -> sin(theta)+-=theta e arcsin(theta) anche
                 u[i, j] = np.pi*diametro/wavelength * \
-                    np.arcsin(r[i, j]/(r[i, j]**2+fuoco**2)**0.5)
+                    (r[i, j]/(r[i, j]**2+fuoco**2)**0.5)
                 I[i, j] = (2*j1(u[i, j])/(u[i, j]))**2
     # normalize I
     I /= np.sum(I)
