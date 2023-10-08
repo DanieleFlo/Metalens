@@ -9,6 +9,7 @@ from sklearn.linear_model import LinearRegression
 from sklearn.metrics import r2_score
 
 from funzioni import *
+from strehl_ratio import *
 
 # Inizializzo le varili principali
 dateNow = (datetime.datetime.now()).strftime("%d-%m-%Y_%H-%M-%S")
@@ -67,14 +68,13 @@ if __name__ == "__main__":
         CyMax = maxP[1]
         print(idTh + '-> Massimo trovato ->  I:' +
               str(maxP[0]) + ', Y:' + str(CyMax) + ', X:' + str(CxMax))
-        allCenter.append([CyMax, CxMax])
 
         if showM == True:
             red = (0, 0, 255)
             point = [CyMax, CxMax]
             show_img_with_point(image, point, red)
 
-        return [profile_dataX(image, CyMax), profile_dataY(image, CxMax), tempC_start, idTh]
+        return [profile_dataX(image, CyMax), profile_dataY(image, CxMax), [CyMax, CxMax], tempC_start, idTh]
 
     with concurrent.futures.ThreadPoolExecutor() as executor:
 
@@ -84,12 +84,23 @@ if __name__ == "__main__":
         for result in results:
             allProfileX.append(result[0])
             allProfileY.append(result[1])
+            allCenter.append(result[2])
             tempC_end = time.time()
-            print(result[3] + '-> Tempo analisi: ' +
-                  str(round((tempC_end-result[2])/60, 2)) + 'm')
+            print(result[4] + '-> Tempo analisi: ' +
+                  str(round((tempC_end-result[3])/60, 2)) + 'm')
             print()
 
     print('-----Fine ricerca massimi------')
+    noise_lim = 10
+    cp_ideal, I_ideal = ideal(.005, 6.35e-7, .050, 1.86e-7, noise_lim)
+    for n in range(len(listImage)):
+        name = listImage[n]
+        dataToSend = cv2.imread('assets/'+name, 0)
+        centerX = allCenter[n][1]
+        centerY = allCenter[n][0]
+        cp_actual, I_actual = actual(dataToSend, centerY, centerX, noise_lim)
+        print(n, '-> S:', cp_actual/cp_ideal)
+
     print('---------Salvo i dati----------')
 
     Cx = []  # Lista centri lungo X
@@ -208,11 +219,13 @@ if __name__ == "__main__":
             for i in range(hx):
                 file.write('X'+str(i+1)+'\tI'+str(i+1) + '\t')
             file.write('\n')
-
+            # blue_channel, green_channel, red_channel = cv2.split(imgX)
+            # print(imgX)
             for j in range(wx):
                 for i in range(hx):
                     file.write(str(j) + '\t' +
-                               str(imgX[i, j][0]) + '\t')
+                               str(imgX[i, j, 2]) + '\t')
+
                 file.write('\n')
 
         print('Salvo i dati dei profili shiftati in X')
@@ -225,7 +238,7 @@ if __name__ == "__main__":
             for j in range(wx):
                 for i in range(hx):
                     file.write(str(j) + '\t' +
-                               str(imgX_shift[i, j][0]) + '\t')
+                               str(imgX_shift[i, j, 2]) + '\t')
                 file.write('\n')
 
         print('Salvo i dati dei profili grezzi in Y')
@@ -238,7 +251,7 @@ if __name__ == "__main__":
             for i in range(hy):
                 for j in range(wy):
                     file.write(str(i) + '\t' +
-                               str(imgY[i, j][0]) + '\t')
+                               str(imgY[i, j, 2]) + '\t')
                 file.write('\n')
 
         print('Salvo i dati dei profili shiftati in Y')
@@ -251,7 +264,7 @@ if __name__ == "__main__":
             for i in range(hy):
                 for j in range(wy):
                     file.write(str(i) + '\t' +
-                               str(imgY_shift[i, j][0]) + '\t')
+                               str(imgY_shift[i, j, 2]) + '\t')
                 file.write('\n')
 
     if saveData == True:  # Salvo l'immagine formata da tutti i profili
