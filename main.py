@@ -9,7 +9,6 @@ from sklearn.linear_model import LinearRegression
 from sklearn.metrics import r2_score
 
 from funzioni import *
-from strehl_ratio import *
 
 # Inizializzo le varili principali
 dateNow = (datetime.datetime.now()).strftime("%d-%m-%Y_%H-%M-%S")
@@ -21,6 +20,8 @@ Imin = 0  # Intensità minima
 errore = 3  # Errore sull'intensiità, i punti di massimo vengo cercati considerando l'errore
 showM = False  # Mostra l'immagine con il punto di massimo trovato in rosso
 saveData = True  # Se su True salva i dati
+stepZu = input('Step Z(mm):')
+pxToUm = 7.55e-8  # Fattore di conversio da px a metri
 # -------Fine setup-------
 
 # Cerco la lista di dutte le immagini da analizzare
@@ -30,6 +31,8 @@ allProfileX = []
 allProfileY = []
 allCenter = []
 Isaturo = 180
+stepZ = float(stepZu)/1000
+pxToStep = stepZ/pxToUm
 
 if __name__ == "__main__":
     def mainF(name, index):
@@ -88,19 +91,9 @@ if __name__ == "__main__":
             tempC_end = time.time()
             print(result[4] + '-> Tempo analisi: ' +
                   str(round((tempC_end-result[3])/60, 2)) + 'm')
-            print()
 
+    print()
     print('-----Fine ricerca massimi------')
-    noise_lim = 10
-    cp_ideal, I_ideal = ideal(.005, 6.35e-7, .050, 1.86e-7, noise_lim)
-    for n in range(len(listImage)):
-        name = listImage[n]
-        dataToSend = cv2.imread('assets/'+name, 0)
-        centerX = allCenter[n][1]
-        centerY = allCenter[n][0]
-        cp_actual, I_actual = actual(dataToSend, centerY, centerX, noise_lim)
-        print(n, '-> S:', cp_actual/cp_ideal)
-
     print('---------Salvo i dati----------')
 
     Cx = []  # Lista centri lungo X
@@ -152,12 +145,14 @@ if __name__ == "__main__":
     wx = len(allProfileX[0])
     hy = len(allProfileY[0])
     wy = len(listImage)
+
     imgX = np.zeros((hx, wx, 3), np.uint8)
     imgX_shift = np.zeros((hx, wx, 3), np.uint8)
     imgY = np.zeros((hy, wy, 3), np.uint8)
     imgY_shift = np.zeros((hy, wy, 3), np.uint8)
     print('ImmagineX: ' + str(hx) + 'x' + str(wx))
     print('ImmagineY: ' + str(hy) + 'x' + str(wy))
+    print('Rapporto px/step: ' + str(round(pxToStep, 3)))
 
     print('Creo l\'immagine dei profili lungo X')
     for y in range(hx):  # Lungo X
@@ -269,15 +264,18 @@ if __name__ == "__main__":
 
     if saveData == True:  # Salvo l'immagine formata da tutti i profili
         print('Salvo tutte le immagini')
-        cv2.imwrite('result/'+dateNow+'_imageX_shift.jpg', imgX_shift)
         cv2.imwrite('result/'+dateNow+'_imageX.jpg', imgX)
-        cv2.imwrite('result/'+dateNow+'_imageY_shift.jpg', imgY_shift)
+        imgX_real = cv2.resize(imgX_shift, (wx, round(hx*pxToStep)))
+        cv2.imwrite('result/'+dateNow+'_imageX_elaborate.jpg', imgX_real)
+
+        imgY_real = cv2.resize(imgY_shift, (round(wy*pxToStep), hy))
+        cv2.imwrite('result/'+dateNow+'_imageY_elaborate.jpg', imgY_real)
         cv2.imwrite('result/'+dateNow+'_imageY.jpg', imgY)
 
     tempo_fine = time.time()
     tempo_trascorso = tempo_fine - tempo_inizio
     print('Tempo impiegato:' + str(round((tempo_trascorso/60), 2)) + 'm')
-    print('Ho finito zi!')
+    print('Ho finito!')
 
 
 # cv2.imshow('Image', image)
