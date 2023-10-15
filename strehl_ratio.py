@@ -29,7 +29,10 @@ errore = 3
 
 Size = int(input('Dimensione area di ricerca (px): '))
 avrgBreak = int(input('Numero di immagini da considerare: '))
-
+while True:
+    sepDec = input('Separazione decimale (. o ,): ')
+    if sepDec == ',' or sepDec == '.':
+        break
 
 def media_img():
     listNameImg = os.listdir(os.path.dirname(
@@ -225,42 +228,42 @@ if saveData == True:
     with open('result/profile_fuoco_average_X.dat', 'w') as file:
         file.write('X\tI\n')
         for i in range(len(profileX)):
-            file.write(str((i-midS)*pxToUm) + '\t' +
-                       str(profileX[i][0]) + '\n')
+            file.write(str((i-midS)*pxToUm).replace('.', sepDec) + '\t' +
+                       str(profileX[i][0]).replace('.', sepDec) + '\n')
 
     with open('result/profile_fuoco_average_Y.dat', 'w') as file:
         file.write('Y\tI\n')
         for i in range(len(profileY)):
-            file.write(str((i-midS)*pxToUm) + '\t' +
-                       str(profileY[i][0]) + '\n')
+            file.write(str((i-midS)*pxToUm).replace('.', sepDec) + '\t' +
+                       str(profileY[i][0]).replace('.', sepDec) + '\n')
 
     with open('result/profile_norm_Y.dat', 'w') as file:
         file.write('Y\tI\n')
         for i in range(len(profY)):
-            file.write(str((i-midS)*pxToUm) + '\t' + str(profY[i]) + '\n')
+            file.write(str((i-midS)*pxToUm).replace('.', sepDec) + '\t' + str(profY[i]).replace('.', sepDec) + '\n')
 
     with open('result/profile_norm_X.dat', 'w') as file:
         file.write('X\tI\n')
         for i in range(len(profX)):
-            file.write(str((i-midS)*pxToUm) + '\t' + str(profX[i]) + '\n')
+            file.write(str((i-midS)*pxToUm).replace('.', sepDec) + '\t' + str(profX[i]).replace('.', sepDec) + '\n')
 
     with open('result/profile_teo_X.dat', 'w') as file:
         file.write('X\tI\n')
         for i in range(len(img_airyX)):
-            file.write(str((i-midS)*pxToUm) + '\t' + str(img_airyX[i]) + '\n')
+            file.write(str((i-midS)*pxToUm).replace('.', sepDec) + '\t' + str(img_airyX[i]).replace('.', sepDec) + '\n')
 
     with open('result/profile_teo_Y.dat', 'w') as file:
         file.write('Y\tI\n')
         for i in range(len(img_airyY)):
-            file.write(str((i-midS)*pxToUm) + '\t' + str(img_airyY[i]) + '\n')
+            file.write(str((i-midS)*pxToUm).replace('.', sepDec) + '\t' + str(img_airyY[i]).replace('.', sepDec) + '\n')
 
     with open('result/parametri.dat', 'w') as file:
-        file.write('Strehl ratio:\n' + 'S. ratio(V):\t' + str(cp) + '\nS. ratio(X):\t' +
-                   str(cpX) + '\nS. ratio(Y):\t' + str(cpY) + '\n')
-        file.write('\nInfo:' + '\nDiametro(m):\t' + str(diameter) + '\npxToUm(m/px):\t' +
-                   str(pxToUm) + '\nL. d\'onda(m):\t' + str(lamb) + '\nFuoco(m):\t' + str(fuoco))
-        file.write('\nCentro X(px):\t' + str(CxMax) +
-                   '\nCentro Y(px):\t' + str(CyMax))
+        file.write('Strehl ratio:\n' + 'S. ratio(V):\t' + str(cp).replace('.', sepDec) + '\nS. ratio(X):\t' +
+                   str(cpX).replace('.', sepDec) + '\nS. ratio(Y):\t' + str(cpY).replace('.', sepDec) + '\n')
+        file.write('\nInfo:' + '\nDiametro(m):\t' + str(diameter).replace('.', sepDec) + '\npxToUm(m/px):\t' +
+                   str(pxToUm) + '\nL. d\'onda(m):\t' + str(lamb).replace('.', sepDec) + '\nFuoco(m):\t' + str(fuoco).replace('.', sepDec))
+        file.write('\nCentro X(px):\t' + str(CxMax).replace('.', sepDec) +
+                   '\nCentro Y(px):\t' + str(CyMax).replace('.', sepDec))
 
 if show == True:
     print('Mostro i dati')
