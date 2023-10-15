@@ -20,9 +20,16 @@ Imin = 0  # Intensità minima
 errore = 3  # Errore sull'intensiità, i punti di massimo vengo cercati considerando l'errore
 showM = False  # Mostra l'immagine con il punto di massimo trovato in rosso
 saveData = True  # Se su True salva i dati
-stepZu = input('Step Z(mm):')
+
+
 pxToUm = 7.55e-8  # Fattore di conversio da px a metri
 # -------Fine setup-------
+
+stepZu = float(input('Step Z(mm):'))
+while True:
+    sepDec = input('Separazione decimale (. o ,): ')
+    if sepDec == ',' or sepDec == '.':
+        break
 
 # Cerco la lista di dutte le immagini da analizzare
 listImage = os.listdir(os.path.dirname(os.path.abspath(__file__)) + '/assets')
@@ -31,7 +38,7 @@ allProfileX = []
 allProfileY = []
 allCenter = []
 Isaturo = 180
-stepZ = float(stepZu)/1000
+stepZ = stepZu/1000
 pxToStep = stepZ/pxToUm
 
 if __name__ == "__main__":
@@ -169,12 +176,12 @@ if __name__ == "__main__":
 
     # Creo le immagini corrette e shiftate
     print('Creo l\'immagine dei profili lungo X,Y corretta con i centri secondo le eq. e shiftati')
+    CxMed = round(mx*(len(listImage)/2) + qx)
+    CyMed = round(my*(len(listImage)/2) + qy)
     for n in range(len(listImage)):  # Lungo X
         name = listImage[n]
         image = cv2.imread('assets/'+name, 0)
         # Calcolo il punto medio in x presente sulla retta che passa per i centri
-        CxMed = round(mx*(len(listImage)/2) + qx)
-        CyMed = round(my*(len(listImage)/2) + qy)
         xs = round(mx*n + qx)
         ys = round(my*n + qy)
         px = profile_dataX(image, ys)
@@ -214,11 +221,10 @@ if __name__ == "__main__":
             for i in range(hx):
                 file.write('X'+str(i+1)+'\tI'+str(i+1) + '\t')
             file.write('\n')
-            # blue_channel, green_channel, red_channel = cv2.split(imgX)
-            # print(imgX)
+
             for j in range(wx):
                 for i in range(hx):
-                    file.write(str(j) + '\t' +
+                    file.write(str(pxToUm*(j-allCenter[i][1])).replace('.', sepDec) + '\t' +
                                str(imgX[i, j, 2]) + '\t')
 
                 file.write('\n')
@@ -232,7 +238,7 @@ if __name__ == "__main__":
 
             for j in range(wx):
                 for i in range(hx):
-                    file.write(str(j) + '\t' +
+                    file.write(str(pxToUm*(j-CxMed)).replace('.', sepDec) + '\t' +
                                str(imgX_shift[i, j, 2]) + '\t')
                 file.write('\n')
 
@@ -245,7 +251,7 @@ if __name__ == "__main__":
 
             for i in range(hy):
                 for j in range(wy):
-                    file.write(str(i) + '\t' +
+                    file.write(str(pxToUm*(i-allCenter[j][0])).replace('.', sepDec) + '\t' +
                                str(imgY[i, j, 2]) + '\t')
                 file.write('\n')
 
@@ -258,7 +264,7 @@ if __name__ == "__main__":
 
             for i in range(hy):
                 for j in range(wy):
-                    file.write(str(i) + '\t' +
+                    file.write(str(pxToUm*(i-CyMed)).replace('.', sepDec) + '\t' +
                                str(imgY_shift[i, j, 2]) + '\t')
                 file.write('\n')
 
