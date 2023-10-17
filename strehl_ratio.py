@@ -214,7 +214,7 @@ print('Area teo(Y):\t', round(areaY, 2),
       '\nArea teo(X)):\t', round(areaX, 2))
 
 cp, img_norm = actual(img_avrg_small, vol_airy)
-cpX, cpY, profX, profY = actual_profile(img_avrg_small, areaY, areaX)
+cpY, cpX, profX, profY = actual_profile(img_avrg_small, areaY, areaX)
 
 
 print('S. ratio(V):\t', round(cp, 3), '\nS. ratio(X):\t',
