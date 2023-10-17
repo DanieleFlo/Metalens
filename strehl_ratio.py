@@ -28,11 +28,12 @@ Imin = 0
 errore = 3
 
 Size = int(input('Dimensione area di ricerca (px): '))
-avrgBreak = int(input('Numero di immagini da considerare: '))
+avrgBreak = int(input('Numero di immagini da considerare: '))-1
 while True:
     sepDec = input('Separazione decimale (. o ,): ')
     if sepDec == ',' or sepDec == '.':
         break
+
 
 def media_img():
     listNameImg = os.listdir(os.path.dirname(
@@ -224,38 +225,43 @@ if saveData == True:
     print('\nSalvo i dati')
     profileX = profile_dataX(img_avrg, CyMax)
     profileY = profile_dataY(img_avrg, CxMax)
-    midS = round(Size/2)
+    
     with open('result/profile_fuoco_average_X.dat', 'w') as file:
         file.write('X\tI\n')
         for i in range(len(profileX)):
-            file.write(str((i-midS)*pxToUm).replace('.', sepDec) + '\t' +
+            file.write(str((i-CxMax)*pxToUm).replace('.', sepDec) + '\t' +
                        str(profileX[i][0]).replace('.', sepDec) + '\n')
 
     with open('result/profile_fuoco_average_Y.dat', 'w') as file:
         file.write('Y\tI\n')
         for i in range(len(profileY)):
-            file.write(str((i-midS)*pxToUm).replace('.', sepDec) + '\t' +
+            file.write(str((i-CyMax)*pxToUm).replace('.', sepDec) + '\t' +
                        str(profileY[i][0]).replace('.', sepDec) + '\n')
-
+            
+    midS = round(Size/2)
     with open('result/profile_norm_Y.dat', 'w') as file:
         file.write('Y\tI\n')
         for i in range(len(profY)):
-            file.write(str((i-midS)*pxToUm).replace('.', sepDec) + '\t' + str(profY[i]).replace('.', sepDec) + '\n')
+            file.write(str((i-midS)*pxToUm).replace('.', sepDec) +
+                       '\t' + str(profY[i]).replace('.', sepDec) + '\n')
 
     with open('result/profile_norm_X.dat', 'w') as file:
         file.write('X\tI\n')
         for i in range(len(profX)):
-            file.write(str((i-midS)*pxToUm).replace('.', sepDec) + '\t' + str(profX[i]).replace('.', sepDec) + '\n')
+            file.write(str((i-midS)*pxToUm).replace('.', sepDec) +
+                       '\t' + str(profX[i]).replace('.', sepDec) + '\n')
 
     with open('result/profile_teo_X.dat', 'w') as file:
         file.write('X\tI\n')
         for i in range(len(img_airyX)):
-            file.write(str((i-midS)*pxToUm).replace('.', sepDec) + '\t' + str(img_airyX[i]).replace('.', sepDec) + '\n')
+            file.write(str((i-midS)*pxToUm).replace('.', sepDec) +
+                       '\t' + str(img_airyX[i]).replace('.', sepDec) + '\n')
 
     with open('result/profile_teo_Y.dat', 'w') as file:
         file.write('Y\tI\n')
         for i in range(len(img_airyY)):
-            file.write(str((i-midS)*pxToUm).replace('.', sepDec) + '\t' + str(img_airyY[i]).replace('.', sepDec) + '\n')
+            file.write(str((i-midS)*pxToUm).replace('.', sepDec) +
+                       '\t' + str(img_airyY[i]).replace('.', sepDec) + '\n')
 
     with open('result/parametri.dat', 'w') as file:
         file.write('Strehl ratio:\n' + 'S. ratio(V):\t' + str(cp).replace('.', sepDec) + '\nS. ratio(X):\t' +
@@ -267,51 +273,42 @@ if saveData == True:
 
 if show == True:
     print('Mostro i dati')
-    fig, axs = plt.subplots(nrows=3, ncols=2, sharex=True, sharey=False)
+    fig, axs = plt.subplots(nrows=2, ncols=2, sharex=True, sharey=False)
+
     axs = axs.ravel()
     fig.suptitle('Grafici fuoco della metalente')
     midSize = pxToUm*(Size/2)
     x = np.linspace(-midSize, midSize, Size-1)
 
-    axs[0].imshow(img_norm, vmin=0, vmax=1,
-                  extent=(-midSize, midSize, - midSize, midSize))
+    im1 = axs[0].imshow(img_norm, vmin=0, vmax=1,
+                        extent=(-midSize, midSize, - midSize, midSize))
     axs[0].set_xlabel('x(m)')
     axs[0].set_ylabel('y(m)')
-    axs[0].title.set_text('Immagine fuoco sperimentale, normalizza')
-    img0 = plt.imshow(img_norm, vmin=0, vmax=1,
-                      extent=(-midSize, midSize, - midSize, midSize))
-    cbar0 = fig.colorbar(img0, ax=axs[0])
+    axs[0].title.set_text('Immagine del fuoco normalizzata')
+    cbar0 = fig.colorbar(im1, ax=axs[0])
     cbar0.set_label('I(au)')
 
-    axs[1].imshow(img_airy, vmin=0, vmax=1,
-                  extent=(-midSize, midSize, - midSize, midSize))
+    im2 = axs[1].imshow(img_airy, vmin=0, vmax=1,
+                        extent=(-midSize, midSize, - midSize, midSize))
     axs[1].set_xlabel('x(m)')
     axs[1].set_ylabel('y(m)')
-    img1 = plt.imshow(img_airy, vmin=0, vmax=1,
-                      extent=(-midSize, midSize, - midSize, midSize))
-    cbar1 = fig.colorbar(img1, ax=axs[1])
+    axs[1].title.set_text('Immagine disco di Airy attesa')
+    cbar1 = fig.colorbar(im2, ax=axs[1])
     cbar1.set_label('I(au)')
-    axs[1].title.set_text('Immagine fuoco attesa')
 
-    axs[2].plot(x, profX, color='blue')
+    axs[2].plot(x, profX, color='blue', label='Profilo in X')
+    axs[2].plot(x, img_airyX, color='orange', label='Disco di Airy')
     axs[2].set_xlabel('x(m)')
     axs[2].set_ylabel('I (au)')
-    axs[2].title.set_text('Profilo fuoco lungo X, sperimentale')
+    axs[2].title.set_text('Profilo fuoco lungo X')
+    axs[2].legend()
 
-    axs[3].plot(x, img_airyX, color='orange')
+    axs[3].plot(x, profY, color='blue', label='Profilo in Y')
+    axs[3].plot(x, img_airyX, color='orange', label='Disco di Airy')
     axs[3].set_xlabel('x(m)')
     axs[3].set_ylabel('I(au)')
-    axs[3].title.set_text('Profilo fuoco lungo X, atteso')
-
-    axs[4].plot(x, profY, color='blue')
-    axs[4].set_xlabel('y(m)')
-    axs[4].set_ylabel('I(au)')
-    axs[4].title.set_text('Profilo fuoco lungo Y, sperimentale')
-
-    axs[5].plot(x, img_airyY, color='orange')
-    axs[5].set_xlabel('y(m)')
-    axs[5].set_ylabel('I(au)')
-    axs[5].title.set_text('Profilo fuoco lungo Y, atteso')
+    axs[3].title.set_text('Profilo fuoco lungo Y')
+    axs[3].legend()
 
     plt.show()
 
