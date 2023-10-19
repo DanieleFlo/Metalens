@@ -27,8 +27,17 @@ fuoco = .05
 Imin = 0
 errore = 3
 
-Size = int(input('Dimensione area di ricerca (px): '))
-avrgBreak = int(input('Numero di immagini da considerare: '))-1
+
+while True:
+    Size = int(input('Dimensione area di ricerca dispari (px): '))
+    if Size > 10 and Size % 2 != 0:
+        break
+
+while True:
+    avrgBreak = int(input('Numero di immagini da considerare: '))-1
+    if avrgBreak >= 0:
+        break
+
 while True:
     sepDec = input('Separazione decimale (. o ,): ')
     if sepDec == ',' or sepDec == '.':
@@ -55,29 +64,9 @@ def media_img():
 
 def actual(data, vol_airy):
     dataTemp = np.array(data)
-    h, w = dataTemp.shape
-    centroX = round(w/2)
-    centroY = round(h/2)
-    minData = np.min(dataTemp)  # 0  # np.mean(dataTemp2)  # np.min(dataTemp)
-    # N = 0
-    # for y in range(h):
-    #     for x in range(w):
-    #         Y = y-centroY
-    #         X = x-centroX
-    #         r = (X**2+Y**2)**0.5
-    #         if r > R:
-    #             minData = minData + dataTemp[y, x]
-    #             N = N + 1
-    # minData = minData/N
-
+    minData = np.min(dataTemp)
     print('Minimo(V):\t', minData)
-
     img_norm = dataTemp-minData
-    # img_norm = np.zeros((h, w), dtype=np.float32)
-    # for y in range(h):
-    #     for x in range(w):
-    #         img_norm[y, x] = dataTemp[y, x]-minData
-    # # img_norm = (dataTemp-minData)
     vol_data = float(np.sum(img_norm))
     img_norm = img_norm*vol_airy/vol_data
     print('Vol dati:\t', round(vol_data, 2))
@@ -118,8 +107,8 @@ def actual_profile(data, area_teoY, area_teoX):
 def ideal(data):
     dataTemp = np.array(data)
     h, w = dataTemp.shape
-    centroX = round(w/2)
-    centroY = round(h/2)
+    centroX = round((w-1)/2)
+    centroY = round((h-1)/2)
     airy_disc = np.zeros((h, w), dtype=np.float32)
     for y in range(h):
         for x in range(w):
@@ -139,8 +128,8 @@ def ideal(data):
 def ideal_profile(img_airy):
     dataTemp = np.array(img_airy)
     h, w = dataTemp.shape
-    centroX = round(w/2)
-    centroY = round(h/2)
+    centroX = round((w-1)/2)
+    centroY = round((h-1)/2)
     img_airyX = profile_dataX(img_airy, centroY)
     img_airyY = profile_dataY(img_airy, centroX)
 
@@ -161,6 +150,48 @@ def ideal_profile(img_airy):
     return [profX, profY, areaY, areaX]
 
 
+def HWHM(dataTemp):
+    data = np.array(dataTemp)
+    h2 = float((np.max(data)) - np.min(data))/2
+    h, w = data.shape
+    centroX = round((w-1)/2)
+    centroY = round((h-1)/2)
+    img_profileX = np.array(profile_dataX(data, centroY))
+    img_profileY = np.array(profile_dataY(data, centroX))
+
+    # Calcolo lungo X
+    px1 = 0
+    px2 = 0
+    minPh2X = h2
+    minNh2X = h2
+    for k in range(len(img_profileX)-1):
+        dX = (img_profileX[k+1][0]-img_profileX[k][0])
+        dis = abs(img_profileX[k][0]-h2)
+        if dX >= 0 and dis < minPh2X:
+            minPh2X = dis
+            px1 = k
+        if dX < 0 and dis < minNh2X:
+            minNh2X = dis
+            px2 = k
+
+    # Calcolo lungo Y
+    py1 = 0
+    py2 = 0
+    minPh2Y = h2
+    minNh2Y = h2
+    for k in range(len(img_profileY)-1):
+        dY = (img_profileY[k+1][0]-img_profileY[k][0])
+        dis = abs(img_profileY[k][0]-h2)
+        if dY >= 0 and dis < minPh2Y:
+            minPh2Y = dis
+            py1 = k
+        if dY < 0 and dis < minNh2Y:
+            minNh2Y = dis
+            py2 = k
+
+    return [abs(px1-px2)*pxToUm, abs(py1-py2)*pxToUm]
+
+
 print('\n-----Inizio calcolo media sulla immagini-----')
 img_avrg = media_img()
 
@@ -174,8 +205,8 @@ if len(puntiMax) > 1:
           str(len(puntiMax)) + ' punti di massimo')
     print('Ricerca massimo: 0%')
     r = round(math.sqrt(len(puntiMax)/6.2931)/2)
-    if r < 10:
-        r = 10
+    if r < 1:
+        r = 1
     pMaxFiltrati = filtra_vicinato(
         puntiMax, img_avrg, r, len(puntiMax), 'Img media ')
     if len(pMaxFiltrati) == 1:
@@ -216,6 +247,8 @@ print('Area teo(Y):\t', round(areaY, 2),
 cp, img_norm = actual(img_avrg_small, vol_airy)
 cpY, cpX, profX, profY = actual_profile(img_avrg_small, areaY, areaX)
 
+hwx, hwy = HWHM(img_avrg_small)
+print('HWHM (X):\t', hwx, '\nHWHM (Y):\t', hwy)
 
 print('S. ratio(V):\t', round(cp, 3), '\nS. ratio(X):\t',
       round(cpX, 3), '\nS. ratio(Y):\t', round(cpY, 3))
@@ -225,7 +258,7 @@ if saveData == True:
     print('\nSalvo i dati')
     profileX = profile_dataX(img_avrg, CyMax)
     profileY = profile_dataY(img_avrg, CxMax)
-    
+
     with open('result/profile_fuoco_average_X.dat', 'w') as file:
         file.write('X\tI\n')
         for i in range(len(profileX)):
@@ -237,7 +270,7 @@ if saveData == True:
         for i in range(len(profileY)):
             file.write(str((i-CyMax)*pxToUm).replace('.', sepDec) + '\t' +
                        str(profileY[i][0]).replace('.', sepDec) + '\n')
-            
+
     midS = round(Size/2)
     with open('result/profile_norm_Y.dat', 'w') as file:
         file.write('Y\tI\n')
@@ -264,8 +297,10 @@ if saveData == True:
                        '\t' + str(img_airyY[i]).replace('.', sepDec) + '\n')
 
     with open('result/parametri.dat', 'w') as file:
-        file.write('Strehl ratio:\n' + 'S. ratio(V):\t' + str(cp).replace('.', sepDec) + '\nS. ratio(X):\t' +
-                   str(cpX).replace('.', sepDec) + '\nS. ratio(Y):\t' + str(cpY).replace('.', sepDec) + '\n')
+        file.write('Result:\n' + 'Strehl ratio(V):\t' + str(cp).replace('.', sepDec) + '\nStrehl ratio(X):\t' +
+                   str(cpX).replace('.', sepDec) + '\nStrehl ratio(Y):\t' + str(cpY).replace('.', sepDec) + '\n')
+        file.write('HWHM (X):\t' + str(hwx).replace('.', sepDec) +
+                   '\nHWHM (Y):\t' + str(hwy).replace('.', sepDec) + '\n')
         file.write('\nInfo:' + '\nDiametro(m):\t' + str(diameter).replace('.', sepDec) + '\npxToUm(m/px):\t' +
                    str(pxToUm) + '\nL. d\'onda(m):\t' + str(lamb).replace('.', sepDec) + '\nFuoco(m):\t' + str(fuoco).replace('.', sepDec))
         file.write('\nCentro X(px):\t' + str(CxMax).replace('.', sepDec) +

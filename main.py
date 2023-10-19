@@ -57,8 +57,8 @@ if __name__ == "__main__":
                   str(len(puntiMax)) + ' punti di massimo')
             print(idTh + '-> Ricerca massimo: 0%')
             r = round(math.sqrt(len(puntiMax)/6.2931)/2)
-            if r < 10:
-                r = 10
+            if r < 1:
+                r = 1
             pMaxFiltrati = filtra_vicinato(
                 puntiMax, image, r, len(puntiMax), idTh)
             if len(pMaxFiltrati) == 1:
