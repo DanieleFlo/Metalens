@@ -1,6 +1,3 @@
-# Author: Eric Shore
-# Purpose: To calculate the Strehl Ratio of an AO System
-
 import cv2
 import numpy as np
 import pickle
@@ -19,14 +16,27 @@ from funzioni import *
 img_avrg = []
 img_norm = []
 show = True  # Mostra l'immagine con il punto di massimo trovato in rosso
-saveData = True  # Se su True salva i dati
+saveData = False  # Se su True salva i dati
 pxToUm = 7.55e-8
 lamb = 6.33e-7
 diameter = .01
 fuoco = .05
 Imin = 0
 errore = 3
+conv = False
+sepDec = '.'
+spectrum = [[633e-9, 10.0]]
 
+while True:
+    convolution = input(
+        'Il disco di airy è una convoluzione con uno spettro (y/n): ')
+    if convolution == 'yes' or convolution == 'y' or convolution == 'si':
+        conv = True
+        break
+    else:
+        if convolution == 'n' or convolution == 'no' or convolution == 'si':
+            conv = False
+            break
 
 while True:
     Size = int(input('Dimensione area di ricerca dispari (px): '))
@@ -38,10 +48,11 @@ while True:
     if avrgBreak >= 0:
         break
 
-while True:
-    sepDec = input('Separazione decimale (. o ,): ')
-    if sepDec == ',' or sepDec == '.':
-        break
+if saveData == True:
+    while True:
+        sepDec = input('Separazione decimale (. o ,): ')
+        if sepDec == ',' or sepDec == '.':
+            break
 
 
 def media_img():
@@ -104,7 +115,7 @@ def actual_profile(data, area_teoY, area_teoX):
     return [np.max(img_normY), np.max(img_normX), img_normX, img_normY]
 
 
-def ideal(data):
+def ideal(data, Lamb, norm):
     dataTemp = np.array(data)
     h, w = dataTemp.shape
     centroX = round((w-1)/2)
@@ -116,12 +127,41 @@ def ideal(data):
             X = x-centroX
             r = (X**2+Y**2)**0.5
             if r == 0:
-                airy_disc[y, x] = 1
+                airy_disc[y, x] = 1*norm
             else:
                 r = r*pxToUm
-                u = np.pi*diameter/lamb * (r/(r**2+fuoco**2)**0.5)
-                airy_disc[y, x] = (2*j1(u)/(u))**2
+                u = np.pi*diameter/Lamb * (r/(r**2+fuoco**2)**0.5)
+                airy_disc[y, x] = norm*(2*j1(u)/(u))**2
     vol_airy = np.sum(airy_disc)
+    return [vol_airy, airy_disc]
+
+
+def convolutionAxS(data):
+    dataTemp = np.array(data)
+    h, w = dataTemp.shape
+    airy_disc = np.zeros((h, w), dtype=np.float32)
+
+    # Calcolo l'aria dello spettro
+    aria_spettro = 0
+    for line in spectrum:
+        aria_spettro = aria_spettro + line[1]
+
+    # Normalizzo lo spettro
+    spectrum_norm = []
+    for l in spectrum:
+        spectrum_norm.append([l[0], l[1]/aria_spettro])
+
+    # Calcolo la convoluzione del disco di airy rispetto allo spettro
+    print('Calcolo convoluzione: 0%')
+    for k in range(len(spectrum_norm)):
+        line = spectrum_norm[k]
+        vol_airy_temp, img_airy_temp = ideal(data, line[0], line[1])
+        airy_disc = airy_disc + np.array(img_airy_temp)
+        print('Calcolo convoluzione: ' +
+              str(round(((k+1)/len(spectrum_norm))*100)) + '%')
+
+    vol_airy = np.sum(airy_disc)
+    print('-----Fine calcolo convoluzione-----')
     return [vol_airy, airy_disc]
 
 
@@ -234,9 +274,12 @@ for y in range(Size):
         Y = CyMax-y+round(Size/2)
         X = CxMax-x+round(Size/2)
         img_avrg_small[y, x] = img_avrg[Y, X]
+if conv == False:
+    vol_airy, img_airy = ideal(img_avrg_small, lamb, 1)
+else:
+    vol_airy, img_airy = convolutionAxS(img_avrg_small)
 
-vol_airy, img_airy = ideal(img_avrg_small)
-
+print('\n-----Info-----')
 print('Vol airy:\t',  round(vol_airy))
 
 img_airyX, img_airyY, areaY, areaX = ideal_profile(img_airy)
@@ -246,7 +289,7 @@ print('Area teo(Y):\t', round(areaY, 2),
 
 cp, img_norm = actual(img_avrg_small, vol_airy)
 cpY, cpX, profX, profY = actual_profile(img_avrg_small, areaY, areaX)
-
+print('\n-----Risultato-----')
 hwx, hwy = HWHM(img_avrg_small)
 print('HWHM (X):\t', hwx, '\nHWHM (Y):\t', hwy)
 
