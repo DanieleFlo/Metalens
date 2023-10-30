@@ -12,20 +12,34 @@ from sklearn.metrics import r2_score
 from funzioni import *
 from scipy.special import j1
 from funzioni import *
+from scipy import integrate
 
-img_avrg = []
-img_norm = []
+# Variabili setup
 show = True  # Mostra l'immagine con il punto di massimo trovato in rosso
-saveData = False  # Se su True salva i dati
+saveData = True  # Se su True salva i dati
 pxToUm = 7.55e-8
-lamb = 6.33e-7
+lamb = 5.32e-7
 diameter = .01
-fuoco = .05
+fuoco = .0569
 Imin = 0
 errore = 3
+
+# Variabili globali
+img_avrg = []
+img_norm = []
 conv = False
 sepDec = '.'
-spectrum = [[633e-9, 10.0]]
+spectrum = []
+
+f = open('sp500nm.txt', 'r')
+riga = f.readline()
+while riga != "":
+    lineText = (riga.replace('\n', '')).split('\t')
+    lambTemp = float(lineText[0])*1e-9
+    IntTemp = float(lineText[1])
+    spectrum.append([lambTemp, IntTemp])
+    riga = f.readline()
+f.close()
 
 while True:
     convolution = input(
@@ -96,13 +110,22 @@ def actual_profile(data, area_teoY, area_teoX):
     areaX = 0
     img_normX = []
     img_normY = []
-    for y in range(h-1):
-        areaY = areaY+float(img_profileY[y][0]+img_profileY[y+1][0])/2
-        img_normY.append(img_profileY[y][0])
 
+    yy = np.zeros(h, dtype=np.float32)
+    for y in range(h-1):
+        img_normY.append(img_profileY[y][0])
+        yy[y] = img_profileY[y][0]
+
+    xy = np.arange(0, h)
+    areaY = integrate.simpson(yy, xy)
+
+    yx = np.zeros(w, dtype=np.float32)
     for x in range(w-1):
-        areaX = areaX+float(img_profileX[x][0]+img_profileX[x+1][0])/2
         img_normX.append(img_profileX[x][0])
+        yx[x] = img_profileX[x][0]
+
+    xx = np.arange(0, w)
+    areaX = integrate.simpson(yx, xx)
 
     img_normX = np.array(img_normX)
     img_normY = np.array(img_normY)
@@ -111,7 +134,8 @@ def actual_profile(data, area_teoY, area_teoX):
     img_normX = (img_normX-minX)*area_teoX/areaX
     img_normY = (img_normY-minY)*area_teoY/areaY
     print('Minimo(X):\t', minX, '\nMinimo(Y):\t', minY)
-    print('Vol dati(X):\t', areaX, '\nVol dati(Y):\t', areaY)
+    print('Area dati(X):\t', round(areaX, 2),
+          '\nArea dati(Y):\t', round(areaY, 2))
     return [np.max(img_normY), np.max(img_normX), img_normX, img_normY]
 
 
@@ -156,7 +180,9 @@ def convolutionAxS(data):
     for k in range(len(spectrum_norm)):
         line = spectrum_norm[k]
         vol_airy_temp, img_airy_temp = ideal(data, line[0], line[1])
+
         airy_disc = airy_disc + np.array(img_airy_temp)
+        print(np.max(airy_disc))
         print('Calcolo convoluzione: ' +
               str(round(((k+1)/len(spectrum_norm))*100)) + '%')
 
@@ -179,13 +205,21 @@ def ideal_profile(img_airy):
     profX = []
     profY = []
 
+    yy = np.zeros(h, dtype=np.float32)
     for y in range(h-1):
-        areaY = areaY+float(img_airyY[y][0]+img_airyY[y+1][0])/2
         profY.append(img_airyY[y][0])
+        yy[y] = img_airyY[y][0]
 
+    xy = np.arange(0, h)
+    areaY = integrate.simpson(yy, xy)
+
+    yx = np.zeros(w, dtype=np.float32)
     for x in range(w-1):
-        areaX = areaX+(img_airyX[x][0]+img_airyX[x+1][0])/2
         profX.append(img_airyX[x][0])
+        yx[x] = img_airyX[x][0]
+
+    xx = np.arange(0, w)
+    areaX = integrate.simpson(yx, xx)
 
     return [profX, profY, areaY, areaX]
 
@@ -285,7 +319,7 @@ print('Vol airy:\t',  round(vol_airy))
 img_airyX, img_airyY, areaY, areaX = ideal_profile(img_airy)
 
 print('Area teo(Y):\t', round(areaY, 2),
-      '\nArea teo(X)):\t', round(areaX, 2))
+      '\nArea teo(X):\t', round(areaX, 2))
 
 cp, img_norm = actual(img_avrg_small, vol_airy)
 cpY, cpX, profX, profY = actual_profile(img_avrg_small, areaY, areaX)
