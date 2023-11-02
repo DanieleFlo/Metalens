@@ -21,6 +21,7 @@ result/
 assets/
 sdist/
 var/
+data/
 wheels/
 share/python-wheels/
 *.egg-info/
