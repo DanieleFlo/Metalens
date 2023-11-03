@@ -18,11 +18,12 @@ from scipy import integrate
 show = True  # Mostra l'immagine con il punto di massimo trovato in rosso
 saveData = True  # Se su True salva i dati
 pxToUm = 7.55e-8
-lamb = 5.32e-7
+lamb = float(input('Lunghezza d\'onda(nm):'))*1e-9
 diameter = .01
-fuoco = .0569
+fuoco = float(input('Distanza fuoco(mm):'))*1e-3
 Imin = 0
 errore = 3
+
 
 # Variabili globali
 img_avrg = []
