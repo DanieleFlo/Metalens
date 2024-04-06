@@ -5,6 +5,9 @@ import os
 import datetime
 import time
 import multiprocessing
+import matplotlib.pyplot as plt
+import re
+from matplotlib.colors import ListedColormap
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import r2_score
 
@@ -20,7 +23,7 @@ Imin = 0  # Intensità minima
 errore = 3  # Errore sull'intensiità, i punti di massimo vengo cercati considerando l'errore
 showM = False  # Mostra l'immagine con il punto di massimo trovato in rosso
 saveData = True  # Se su True salva i dati
-
+color_light = 'red'
 
 pxToUm = 7.55e-8  # Fattore di conversio da px a metri
 # -------Fine setup-------
@@ -33,6 +36,8 @@ while True:
 
 # Cerco la lista di dutte le immagini da analizzare
 listImage = os.listdir(os.path.dirname(os.path.abspath(__file__)) + '/assets')
+listImage = sorted(listImage, key=lambda s: [int(
+    x) if x.isdigit() else x for x in re.split('([0-9]+)', s)])
 
 allProfileX = []
 allProfileY = []
@@ -270,13 +275,116 @@ if __name__ == "__main__":
 
     if saveData == True:  # Salvo l'immagine formata da tutti i profili
         print('Salvo tutte le immagini')
-        cv2.imwrite('result/'+dateNow+'_imageX.jpg', imgX)
-        imgX_real = cv2.resize(imgX_shift, (wx, round(hx*pxToStep)))
-        cv2.imwrite('result/'+dateNow+'_imageX_elaborate.jpg', imgX_real)
 
+        dpi = 100
+        s_inch = 720 / dpi
+        l_inch = 1920 / dpi
+
+        colors = []
+        for i in range(255):
+            if (i != 254):
+                if (color_light == 'red'):
+                    colors.append((i/255, 0, 0))
+                if (color_light == 'green'):
+                    colors.append((0, i/255, 0))
+                if (color_light == 'blue'):
+                    colors.append((0, 0, i/255))
+            else:
+                colors.append((1, 1, 1))
+
+        # Creazione della mappa di colori personalizzata
+        custom_cmap = ListedColormap(colors)
+        # ----------------------------------------------------------------
+
+        imgX_real = cv2.resize(imgX_shift, (wx, round(hx*pxToStep)))
+        imgX_real_rot90 = np.rot90(imgX_real)
+
+        # Calcolo delle dimensioni dell'immagine in metri
+        width_meters = imgX_real.shape[1] * pxToUm
+        height_meters = imgX_real.shape[0] * pxToUm
+
+        maxPxz = []
+        imageXZ = imgX_shift[:, :, 2]
+        puntiMaxXZ = pMax(imageXZ, Imin, errore)
+        if len(puntiMaxXZ) > 1:
+            print('In X-Z ho trovato ' +
+                  str(len(puntiMaxXZ)) + ' punti di massimo')
+            print('X-Z -> Ricerca massimo: 0%')
+            r = round(math.sqrt(len(puntiMaxXZ)/6.2931)/2)
+            if r < 1:
+                r = 1
+            pMaxFiltratiXZ = filtra_vicinato(
+                puntiMaxXZ, imageXZ, r, len(puntiMaxXZ), 'X-Z')
+            if len(pMaxFiltratiXZ) == 1:
+                maxPxz = pMaxFiltratiXZ[0]
+            else:
+                print('Errore nella ricerca del massimo')
+        else:
+            if len(puntiMaxXZ) == 1:
+                print('In X-Z ho trovato ' +
+                      str(len(puntiMaxXZ)) + ' punto di massimo')
+                print('X-Z-> Ricerca massimo: 0%')
+                maxPxz = puntiMaxXZ[0]
+                print('X-Z -> Ricerca massimo: 100%')
+            else:
+                print('Non ho trovato massimi')
+        CxMaxXZ = maxPxz[2]*pxToUm
+        CyMaxXZ = (hx-maxPxz[1])*stepZ
+
+        plt.figure(figsize=(l_inch, s_inch))
+        plt.imshow(imgX_real_rot90[:, :, 2] / 255, vmax=1, vmin=0, extent=[height_meters-CyMaxXZ, -CyMaxXZ, -CxMaxXZ, width_meters -
+                   CxMaxXZ,], cmap=custom_cmap)
+        plt.xlabel('Z(m)')
+        plt.ylabel('X(m)')
+        plt.title('Pofilo dell\'intesità lungo X-Z')
+        plt.colorbar(label='I(a.u.)', orientation='horizontal')
+        plt.grid(False)
+        plt.savefig('result/'+dateNow+'_profilo_XZ.png', dpi=dpi)
+        plt.close()
+
+        # ****************Y-Axis***********************
         imgY_real = cv2.resize(imgY_shift, (round(wy*pxToStep), hy))
-        cv2.imwrite('result/'+dateNow+'_imageY_elaborate.jpg', imgY_real)
-        cv2.imwrite('result/'+dateNow+'_imageY.jpg', imgY)
+        width_meters = imgY_real.shape[1] * pxToUm
+        height_meters = imgY_real.shape[0] * pxToUm
+
+        maxPyz = []
+        imageYZ = imgY_shift[:, :, 2]
+        puntiMaxYZ = pMax(imageYZ, Imin, errore)
+        if len(puntiMaxYZ) > 1:
+            print('In Y-Z ho trovato ' +
+                  str(len(puntiMaxYZ)) + ' punti di massimo')
+            print('Y-Z -> Ricerca massimo: 0%')
+            r = round(math.sqrt(len(puntiMaxYZ)/6.2931)/2)
+            if r < 1:
+                r = 1
+            pMaxFiltratiYZ = filtra_vicinato(
+                puntiMaxYZ, imageYZ, r, len(puntiMaxYZ), 'Y-Z')
+            if len(pMaxFiltratiYZ) == 1:
+                maxPyz = pMaxFiltratiYZ[0]
+            else:
+                print('Errore nella ricerca del massimo')
+        else:
+            if len(puntiMaxYZ) == 1:
+                print('In Y-Z ho trovato ' +
+                      str(len(puntiMaxYZ)) + ' punto di massimo')
+                print('Y-Z-> Ricerca massimo: 0%')
+                maxPyz = puntiMaxYZ[0]
+                print('Y-Z -> Ricerca massimo: 100%')
+            else:
+                print('Non ho trovato massimi')
+        CxMaxYZ = (wy-maxPyz[2])*stepZ
+        CyMaxYZ = maxPyz[1]*pxToUm
+
+        plt.figure(figsize=(l_inch, s_inch))
+        plt.imshow(imgY_real[:, :, 2] / 255, vmax=1, vmin=0, extent=[width_meters -
+                   CxMaxYZ, -CxMaxYZ, -CyMaxYZ, height_meters-CyMaxYZ], cmap=custom_cmap)
+        plt.xlabel('Z(m)')
+        plt.ylabel('Y(m)')
+        plt.title('Pofilo dell\'intesità lungo Y-Z')
+        plt.colorbar(label='I(a.u.)', orientation='horizontal')
+        plt.grid(False)
+        plt.savefig('result/'+dateNow+'_profilo_YZ.png', dpi=dpi)
+        plt.close()
 
     tempo_fine = time.time()
     tempo_trascorso = tempo_fine - tempo_inizio
